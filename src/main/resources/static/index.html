@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShopFlow Dashboard</title>
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:system-ui,sans-serif;background:#f5f5f0;color:#1a1a1a;padding:1.5rem}
+        .header{display:flex;align-items:center;gap:12px;margin-bottom:1.5rem}
+        .logo{width:40px;height:40px;border-radius:10px;background:#378ADD;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px}
+        .header h1{font-size:20px;font-weight:500}
+        .header p{font-size:13px;color:#666}
+        .btn-refresh{margin-left:auto;padding:8px 16px;border-radius:8px;border:1px solid #ddd;background:#fff;cursor:pointer;font-size:13px}
+        .btn-refresh:hover{background:#f0f0f0}
+        .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:1.5rem}
+        .stat{background:#eee;border-radius:8px;padding:1rem}
+        .stat-label{font-size:12px;color:#666;margin-bottom:6px}
+        .stat-value{font-size:24px;font-weight:500}
+        .stat-sub{font-size:12px;color:#888;margin-top:4px}
+        .cols{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+        .card{background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:1rem 1.25rem}
+        .card-title{font-size:14px;font-weight:500;color:#555;margin-bottom:1rem}
+        .form-group{margin-bottom:10px}
+        .form-group label{font-size:12px;color:#666;display:block;margin-bottom:4px}
+        .form-group input{width:100%;font-size:13px;padding:7px 10px;border:1px solid #ddd;border-radius:8px;outline:none}
+        .form-group input:focus{border-color:#378ADD}
+        .btn-primary{width:100%;padding:9px;border-radius:8px;border:none;background:#378ADD;color:#fff;font-size:13px;cursor:pointer;margin-top:6px}
+        .btn-primary:hover{opacity:0.9}
+        .item{padding:10px 8px;border-bottom:1px solid #f0f0f0;font-size:13px;cursor:pointer;transition:background .15s;border-radius:6px}
+        .item:hover{background:#f5f5f0}
+        .item:last-child{border-bottom:none}
+        .item-row{display:flex;justify-content:space-between;align-items:center}
+        .item-sub{font-size:12px;color:#888;margin-top:3px}
+        .badge{font-size:11px;padding:2px 8px;border-radius:6px;font-weight:500}
+        .badge-pendiente{background:#FAEEDA;color:#633806}
+        .badge-pagada{background:#EAF3DE;color:#27500A}
+        .badge-en_camino{background:#FFF3CD;color:#856404}
+        .badge-entregado{background:#E6F1FB;color:#0C447C}
+        .msg{font-size:12px;color:#888;text-align:center;padding:1rem}
+        .msg-ok{color:#27500A}
+        .msg-err{color:#A32D2D}
+        .full{grid-column:1/-1}
+        .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:100;align-items:center;justify-content:center}
+        .overlay.open{display:flex}
+        .modal{background:#fff;border-radius:14px;padding:1.5rem;width:90%;max-width:480px;max-height:80vh;overflow-y:auto}
+        .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+        .modal-header h2{font-size:16px;font-weight:500}
+        .modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:#888;line-height:1}
+        .detail-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0;font-size:13px}
+        .detail-row:last-child{border-bottom:none}
+        .detail-label{color:#888}
+        .detail-value{font-weight:500;text-align:right}
+        .detalle-item{background:#f9f9f9;border-radius:8px;padding:8px 12px;margin-top:6px;font-size:13px}
+        @media(max-width:600px){.cols{grid-template-columns:1fr}}
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="logo">🛍</div>
+    <div>
+        <h1>ShopFlow Dashboard</h1>
+        <p>Tienda · Facturación · Logística</p>
+    </div>
+    <button class="btn-refresh" onclick="cargarTodo()">↻ Actualizar</button>
+</div>
+
+<div class="stats">
+    <div class="stat"><div class="stat-label">📦 Productos</div><div class="stat-value" id="cnt-productos">—</div><div class="stat-sub">en catálogo</div></div>
+    <div class="stat"><div class="stat-label">🛒 Pedidos</div><div class="stat-value" id="cnt-pedidos">—</div><div class="stat-sub">realizados</div></div>
+    <div class="stat"><div class="stat-label">🧾 Facturas</div><div class="stat-value" id="cnt-facturas">—</div><div class="stat-sub">generadas</div></div>
+    <div class="stat"><div class="stat-label">🚚 Envíos</div><div class="stat-value" id="cnt-envios">—</div><div class="stat-sub">registrados</div></div>
+</div>
+
+<div class="cols">
+    <div class="card">
+        <div class="card-title">➕ Agregar producto</div>
+        <div class="form-group"><label>Nombre</label><input id="p-nombre" placeholder="Ej: iPhone 15 Pro"/></div>
+        <div class="form-group"><label>Descripción</label><input id="p-desc" placeholder="Descripción breve"/></div>
+        <div class="form-group"><label>Precio</label><input id="p-precio" type="number" placeholder="3500000"/></div>
+        <div class="form-group"><label>Stock</label><input id="p-stock" type="number" placeholder="10"/></div>
+        <button class="btn-primary" onclick="crearProducto()">Crear producto</button>
+        <div id="msg-producto" class="msg"></div>
+    </div>
+    <div class="card">
+        <div class="card-title">🛍️ Nuevo pedido</div>
+        <div class="form-group"><label>Nombre cliente</label><input id="c-nombre" placeholder="Nombre completo"/></div>
+        <div class="form-group"><label>Email</label><input id="c-email" placeholder="correo@ejemplo.com"/></div>
+        <div class="form-group"><label>Dirección</label><input id="c-dir" placeholder="Calle, ciudad"/></div>
+        <div class="form-group"><label>ID producto</label><input id="c-prod" type="number" placeholder="1"/></div>
+        <div class="form-group"><label>Cantidad</label><input id="c-cant" type="number" placeholder="1"/></div>
+        <button class="btn-primary" onclick="crearPedido()">Realizar pedido</button>
+        <div id="msg-pedido" class="msg"></div>
+    </div>
+</div>
+
+<div class="cols">
+    <div class="card">
+        <div class="card-title">📦 Catálogo <span style="font-size:11px;color:#aaa">(clic para ver detalle)</span></div>
+        <div id="lista-productos"><div class="msg">Cargando...</div></div>
+    </div>
+    <div class="card">
+        <div class="card-title">🛒 Pedidos recientes <span style="font-size:11px;color:#aaa">(clic para ver detalle)</span></div>
+        <div id="lista-pedidos"><div class="msg">Cargando...</div></div>
+    </div>
+</div>
+
+<div class="cols">
+    <div class="card">
+        <div class="card-title">🧾 Facturas <span style="font-size:11px;color:#aaa">(clic para ver detalle)</span></div>
+        <div id="lista-facturas"><div class="msg">Cargando...</div></div>
+    </div>
+    <div class="card">
+        <div class="card-title">🚚 Envíos <span style="font-size:11px;color:#aaa">(clic para ver detalle)</span></div>
+        <div id="lista-envios"><div class="msg">Cargando...</div></div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="overlay" id="overlay" onclick="cerrarModal(event)">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 id="modal-titulo">Detalle</h2>
+            <button class="modal-close" onclick="cerrarModal()">✕</button>
+        </div>
+        <div id="modal-contenido"></div>
+    </div>
+</div>
+
+<script>
+    const fmt = n => new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(n);
+    let _productos=[],_pedidos=[],_facturas=[],_envios=[];
+
+    async function get(url){
+        try{const r=await fetch(url);return r.ok?r.json():[];}catch{return[];}
+    }
+
+    async function cargarTodo(){
+        [_productos,_pedidos,_facturas,_envios]=await Promise.all([
+            get('/api/productos'),get('/api/pedidos'),
+            get('http://localhost:8081/api/facturas'),
+            get('http://localhost:8082/api/envios')
+        ]);
+        document.getElementById('cnt-productos').textContent=_productos.length;
+        document.getElementById('cnt-pedidos').textContent=_pedidos.length;
+        document.getElementById('cnt-facturas').textContent=_facturas.length;
+        document.getElementById('cnt-envios').textContent=_envios.length;
+
+        document.getElementById('lista-productos').innerHTML=_productos.length?_productos.map(p=>`
+            <div class="item" onclick="verProducto(${p.id})">
+                <div class="item-row"><span style="font-weight:500">${p.nombre}</span><span>${fmt(p.precio)}</span></div>
+                <div class="item-sub">${p.descripcion} · Stock: ${p.stock}</div>
+            </div>`).join(''):'<div class="msg">No hay productos</div>';
+
+        document.getElementById('lista-pedidos').innerHTML=_pedidos.length?_pedidos.slice(-5).reverse().map(p=>`
+            <div class="item" onclick="verPedido(${p.id})">
+                <div class="item-row"><span style="font-weight:500">${p.clienteNombre}</span><span class="badge badge-${p.estado.toLowerCase()}">${p.estado}</span></div>
+                <div class="item-sub">Total: ${fmt(p.total)} · ${p.fechaCreacion?p.fechaCreacion.substring(0,10):''}</div>
+            </div>`).join(''):'<div class="msg">No hay pedidos</div>';
+
+        document.getElementById('lista-facturas').innerHTML=_facturas.length?_facturas.slice(-5).reverse().map(f=>`
+            <div class="item" onclick="verFactura(${f.id})">
+                <div class="item-row"><span style="font-weight:500">${f.clienteNombre}</span><span class="badge ${f.estado==='PAGADA'?'badge-pagada':'badge-pendiente'}">${f.estado}</span></div>
+                <div class="item-sub">Total: ${fmt(f.total)} · IVA: ${fmt(f.iva)}</div>
+            </div>`).join(''):'<div class="msg">No hay facturas</div>';
+
+        document.getElementById('lista-envios').innerHTML=_envios.length?_envios.slice(-5).reverse().map(e=>`
+            <div class="item" onclick="verEnvio(${e.id})">
+                <div class="item-row"><span style="font-weight:500">${e.clienteNombre}</span>
+                <span class="badge ${e.estado==='ENTREGADO'?'badge-entregado':e.estado==='EN_CAMINO'?'badge-en_camino':'badge-pendiente'}">${e.estado}</span></div>
+                <div class="item-sub">${e.direccionEntrega} · Pedido #${e.pedidoId}</div>
+            </div>`).join(''):'<div class="msg">No hay envíos</div>';
+    }
+
+    function abrirModal(titulo,html){
+        document.getElementById('modal-titulo').textContent=titulo;
+        document.getElementById('modal-contenido').innerHTML=html;
+        document.getElementById('overlay').classList.add('open');
+    }
+    function cerrarModal(e){
+        if(!e||e.target===document.getElementById('overlay'))
+            document.getElementById('overlay').classList.remove('open');
+    }
+
+    function verProducto(id){
+        const p=_productos.find(x=>x.id===id);
+        if(!p)return;
+        abrirModal('📦 '+p.nombre,`
+            <div class="detail-row"><span class="detail-label">ID</span><span class="detail-value">#${p.id}</span></div>
+            <div class="detail-row"><span class="detail-label">Nombre</span><span class="detail-value">${p.nombre}</span></div>
+            <div class="detail-row"><span class="detail-label">Descripción</span><span class="detail-value">${p.descripcion}</span></div>
+            <div class="detail-row"><span class="detail-label">Precio</span><span class="detail-value">${fmt(p.precio)}</span></div>
+            <div class="detail-row"><span class="detail-label">Stock disponible</span><span class="detail-value">${p.stock} unidades</span></div>`);
+    }
+
+    function verPedido(id){
+        const p=_pedidos.find(x=>x.id===id);
+        if(!p)return;
+        const detalles=p.detalles?p.detalles.map(d=>`
+            <div class="detalle-item">
+                <div style="font-weight:500">${d.productoNombre}</div>
+                <div style="color:#888;margin-top:2px">Cantidad: ${d.cantidad} · Precio: ${fmt(d.precioUnitario)} · Subtotal: ${fmt(d.subtotal)}</div>
+            </div>`).join(''):'';
+        abrirModal('🛒 Pedido #'+p.id,`
+            <div class="detail-row"><span class="detail-label">Cliente</span><span class="detail-value">${p.clienteNombre}</span></div>
+            <div class="detail-row"><span class="detail-label">Email</span><span class="detail-value">${p.clienteEmail}</span></div>
+            <div class="detail-row"><span class="detail-label">Dirección</span><span class="detail-value">${p.direccionEntrega}</span></div>
+            <div class="detail-row"><span class="detail-label">Estado</span><span class="detail-value"><span class="badge badge-${p.estado.toLowerCase()}">${p.estado}</span></span></div>
+            <div class="detail-row"><span class="detail-label">Total</span><span class="detail-value">${fmt(p.total)}</span></div>
+            <div class="detail-row"><span class="detail-label">Fecha</span><span class="detail-value">${p.fechaCreacion?p.fechaCreacion.substring(0,10):''}</span></div>
+            <div style="margin-top:12px;font-size:12px;color:#888;margin-bottom:4px">PRODUCTOS</div>${detalles}`);
+    }
+
+    function verFactura(id){
+        const f=_facturas.find(x=>x.id===id);
+        if(!f)return;
+        abrirModal('🧾 Factura #'+f.id,`
+            <div class="detail-row"><span class="detail-label">Pedido</span><span class="detail-value">#${f.pedidoId}</span></div>
+            <div class="detail-row"><span class="detail-label">Cliente</span><span class="detail-value">${f.clienteNombre}</span></div>
+            <div class="detail-row"><span class="detail-label">Email</span><span class="detail-value">${f.clienteEmail}</span></div>
+            <div class="detail-row"><span class="detail-label">Subtotal</span><span class="detail-value">${fmt(f.subtotal)}</span></div>
+            <div class="detail-row"><span class="detail-label">IVA (19%)</span><span class="detail-value">${fmt(f.iva)}</span></div>
+            <div class="detail-row"><span class="detail-label">Total</span><span class="detail-value" style="font-size:15px">${fmt(f.total)}</span></div>
+            <div class="detail-row"><span class="detail-label">Estado</span><span class="detail-value"><span class="badge ${f.estado==='PAGADA'?'badge-pagada':'badge-pendiente'}">${f.estado}</span></span></div>
+            <div class="detail-row"><span class="detail-label">Fecha emisión</span><span class="detail-value">${f.fechaEmision?f.fechaEmision.substring(0,10):''}</span></div>
+            ${f.estado!=='PAGADA'?`<button class="btn-primary" style="margin-top:14px;background:#27ae60" onclick="pagarFactura(${f.pedidoId})">✅ Marcar como pagada</button>`:'<p style="text-align:center;color:#27500A;font-size:13px;margin-top:14px;font-weight:500">✓ Factura pagada</p>'}`);
+    }
+
+    function verEnvio(id){
+        const e=_envios.find(x=>x.id===id);
+        if(!e)return;
+        let boton = '';
+        if(e.estado==='PENDIENTE'){
+            boton=`<button class="btn-primary" style="margin-top:14px;background:#e67e22" onclick="cambiarEstadoEnvio(${e.pedidoId},'EN_CAMINO')">🚛 Marcar EN CAMINO</button>`;
+        } else if(e.estado==='EN_CAMINO'){
+            boton=`<button class="btn-primary" style="margin-top:14px;background:#27ae60" onclick="cambiarEstadoEnvio(${e.pedidoId},'ENTREGADO')">📦 Marcar ENTREGADO</button>`;
+        } else {
+            boton=`<p style="text-align:center;color:#0C447C;font-size:13px;margin-top:14px;font-weight:500">✓ Pedido entregado</p>`;
+        }
+        abrirModal('🚚 Envío #'+e.id,`
+            <div class="detail-row"><span class="detail-label">Pedido</span><span class="detail-value">#${e.pedidoId}</span></div>
+            <div class="detail-row"><span class="detail-label">Cliente</span><span class="detail-value">${e.clienteNombre}</span></div>
+            <div class="detail-row"><span class="detail-label">Email</span><span class="detail-value">${e.clienteEmail}</span></div>
+            <div class="detail-row"><span class="detail-label">Dirección</span><span class="detail-value">${e.direccionEntrega}</span></div>
+            <div class="detail-row"><span class="detail-label">Estado</span><span class="detail-value"><span class="badge ${e.estado==='ENTREGADO'?'badge-entregado':e.estado==='EN_CAMINO'?'badge-en_camino':'badge-pendiente'}">${e.estado}</span></span></div>
+            <div class="detail-row"><span class="detail-label">Fecha registro</span><span class="detail-value">${e.fechaRegistro?e.fechaRegistro.substring(0,10):''}</span></div>
+            <div class="detail-row"><span class="detail-label">Fecha entrega</span><span class="detail-value">${e.fechaEntrega?e.fechaEntrega.substring(0,10):'Pendiente'}</span></div>
+            ${boton}`);
+    }
+
+    async function pagarFactura(pedidoId){
+        try{
+            const r=await fetch(`http://localhost:8081/api/facturas/pagar/${pedidoId}`,{method:'PUT'});
+            if(r.ok){cerrarModal();await cargarTodo();}
+            else{alert('Error al actualizar la factura');}
+        }catch{alert('No se pudo conectar con Facturación');}
+    }
+
+    async function cambiarEstadoEnvio(pedidoId, estado){
+        try{
+            const r=await fetch(`http://localhost:8082/api/envios/estado/${pedidoId}?estado=${estado}`,{method:'PUT'});
+            if(r.ok){cerrarModal();await cargarTodo();}
+            else{alert('Error al actualizar el envío');}
+        }catch{alert('No se pudo conectar con Logística');}
+    }
+
+    async function crearProducto(){
+        const msg=document.getElementById('msg-producto');
+        const body={nombre:document.getElementById('p-nombre').value,descripcion:document.getElementById('p-desc').value,precio:+document.getElementById('p-precio').value,stock:+document.getElementById('p-stock').value};
+        if(!body.nombre||!body.precio){msg.className='msg msg-err';msg.textContent='Completa nombre y precio';return;}
+        try{
+            const r=await fetch('/api/productos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+            if(r.ok){msg.className='msg msg-ok';msg.textContent='✓ Producto creado';cargarTodo();}
+            else{msg.className='msg msg-err';msg.textContent='Error al crear';}
+        }catch{msg.className='msg msg-err';msg.textContent='No se pudo conectar';}
+    }
+
+    async function crearPedido(){
+        const msg=document.getElementById('msg-pedido');
+        const body={clienteNombre:document.getElementById('c-nombre').value,clienteEmail:document.getElementById('c-email').value,direccionEntrega:document.getElementById('c-dir').value,detalles:[{productoId:+document.getElementById('c-prod').value,cantidad:+document.getElementById('c-cant').value}]};
+        if(!body.clienteNombre||!body.clienteEmail){msg.className='msg msg-err';msg.textContent='Completa nombre y email';return;}
+        try{
+            const r=await fetch('/api/pedidos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+            if(r.ok){msg.className='msg msg-ok';msg.textContent='✓ Pedido creado — factura y envío generados';cargarTodo();}
+            else{msg.className='msg msg-err';msg.textContent='Error al crear pedido';}
+        }catch{msg.className='msg msg-err';msg.textContent='No se pudo conectar';}
+    }
+
+    cargarTodo();
+</script>
+</body>
+</html>
