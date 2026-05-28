@@ -16,4 +16,7 @@ public class Producto {
     private String descripcion;
     private Double precio;
     private Integer stock;
+
+    @Column(length = 2048)
+    private String imagen;  // ← agrega esto
 }

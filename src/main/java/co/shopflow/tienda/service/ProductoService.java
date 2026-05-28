@@ -18,6 +18,22 @@ public class ProductoService {
         return productoRepository.save(producto);
     }
 
+    // COMMAND: Actualizar producto
+    public Producto actualizarProducto(Long id, Producto datos) {
+        Producto p = obtenerPorId(id);
+        p.setNombre(datos.getNombre());
+        p.setDescripcion(datos.getDescripcion());
+        p.setPrecio(datos.getPrecio());
+        p.setStock(datos.getStock());
+        p.setImagen(datos.getImagen());
+        return productoRepository.save(p);
+    }
+
+    // COMMAND: Eliminar producto
+    public void eliminarProducto(Long id) {
+        productoRepository.deleteById(id);
+    }
+
     // QUERY: Obtener catalogo completo
     public List<Producto> obtenerCatalogo() {
         return productoRepository.findAll();
